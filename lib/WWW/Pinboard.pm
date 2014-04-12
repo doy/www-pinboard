@@ -24,9 +24,7 @@ This module is a basic client for the L<https://pinboard.in/> API. It currently
 provides methods for each API method in the C<posts/> namespace (patches
 welcome to add support for more methods). Each method takes a hash of
 arguments, which correspond to the parameters documented in the API
-documentation at L<https://pinboard.in/api/>. They can also take an additional
-parameter C<progress>, which will be passed to the C<data_callback> parameter
-of the call to C<get> on the L<HTTP::Tiny> object.
+documentation at L<https://pinboard.in/api/>.
 
 =cut
 
@@ -105,16 +103,12 @@ for my $method (qw(update add delete get recent dates all suggest)) {
         my $self = shift;
         my (%args) = @_;
 
-        my $progress = delete $args{progress};
-
         my $uri = $self->endpoint->clone;
         # XXX eventually support other parts of the api
         $uri->path($uri->path . 'posts/' . $method);
         $uri->query_form($uri->query_form, %args);
 
-        my $res = $self->ua->get(
-            $uri, { $progress ? (data_callback => $progress) : () }
-        );
+        my $res = $self->ua->get($uri);
         die $res->{content} unless $res->{success};
         return $self->json->decode($res->{content});
     });

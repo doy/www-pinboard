@@ -7,13 +7,11 @@ use warnings;
 use DBI;
 use Getopt::Long qw(:config pass_through);
 use WWW::Pinboard;
-use Term::ProgressBar;
 
-my ($dsn, $token, $quiet);
+my ($dsn, $token);
 GetOptions(
     'dsn=s'   => \$dsn,
     'token=s' => \$token,
-    'quiet'   => \$quiet,
 );
 die "--dsn is required" unless $dsn;
 die "--token is required" unless $token;
@@ -45,32 +43,11 @@ if ($fromdt ge $api->update->{update_time}) {
     exit(0);
 }
 
-my $progress;
-
 my $sth = $dbh->prepare(
     'INSERT INTO posts (href, description, extended, tags, time, toread) VALUES (?, ?, ?, ?, ?, ?)'
 );
 
-my $posts = $api->all(fromdt => $fromdt, progress => sub {
-    my ($chunk, $res) = @_;
-    if (!$progress && !$quiet && defined $res->{headers}{'content-length'}) {
-        $progress = Term::ProgressBar->new({
-            count => $res->{headers}{'content-length'},
-            ETA   => 'linear',
-        });
-        $progress->message("downloading new posts...");
-    }
-    $res->{content} .= $chunk;
-    $progress->update(length($res->{content})) if $progress;
-});
-
-if (!$quiet) {
-    $progress = Term::ProgressBar->new({
-        count => scalar(@$posts),
-        ETA   => 'linear',
-    });
-    $progress->message('importing posts...');
-}
+my $posts = $api->all(fromdt => $fromdt);
 
 for my $post (@$posts) {
     $sth->execute(
@@ -81,7 +58,6 @@ for my $post (@$posts) {
         $post->{time},
         $post->{toread},
     );
-    $progress->update if $progress;
 }
 
 $dbh->commit;
