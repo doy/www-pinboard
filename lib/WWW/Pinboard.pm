@@ -6,8 +6,9 @@ use JSON::PP;
 use URI;
 
 has token => (
-    is  => 'ro',
-    isa => 'Str',
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
 );
 
 has _endpoint => (
